@@ -33,6 +33,22 @@ public:
         }
     }
 
+    void remove_user(const string &user_id) {
+        if (adjList.find(user_id) != adjList.end()) {
+            adjList.erase(user_id);
+
+            users.erase(user_id);
+
+            for (auto &pair : adjList) {
+                auto &connections = pair.second;
+                connections.erase(
+                    remove_if(connections.begin(), connections.end(),
+                              [&user_id](const Edge &e) { return e.second == user_id; }),
+                    connections.end());
+            }
+        }
+    }
+
     void add_connection(const string &user, const string &other_user, double weight) {
         adjList[user].push_back({weight, other_user});
         adjList[other_user].push_back({weight, user});
@@ -142,6 +158,7 @@ PYBIND11_MODULE(social_network, m) {
     py::class_<SocialNetwork>(m, "SocialNetwork")
         .def(py::init<>())
         .def("add_user", &SocialNetwork::add_user)
+        .def("remove_user", &SocialNetwork::remove_user)
         .def("add_connection", &SocialNetwork::add_connection)
         .def("dijkstra", &SocialNetwork::dijkstra)
         .def("detect_communities", &SocialNetwork::detect_communities)
