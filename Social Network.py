@@ -440,7 +440,7 @@ class SocialNetworkApp:
                 else:
                     communities_message = "\n\n".join(
                         [
-                            f"Community {i+1}" + ", ".join(community)
+                            f"Community {i+1}: " + ", ".join(community)
                             for i, community in enumerate(communities)
                         ]
                     )
@@ -484,14 +484,12 @@ class SocialNetworkApp:
         net = Network(notebook=True, cdn_resources="in_line")
         net.nodes = []
         net.edges = []
-        print("Debugging: Starting visualization update.")
+        
 
         for user_id in self.users:
             user_data = self.users[user_id]
-            print(f"Debugging Node - User ID: {user_id}, Data: {user_data}")
             net.add_node(user_id, label=user_data["name"] + f"({user_id})")
         for (user1, user2), weight in self.connections.items():
-            print(f"Debugging Edge - Connection: {user1} -> {user2}, Weight: {weight}")
             net.add_edge(user1, user2, value=weight)
         if shortestpath:
             for i in range(len(shortestpath) - 1):
