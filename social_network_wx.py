@@ -5,11 +5,14 @@ import os
 import social_network
 import datetime
 from faker import Faker
+from wx.lib.newevent import NewEvent
 import time
 import random
+import threading
 
 
 network_cpp = social_network.SocialNetwork()
+UpdateWebViewEvent, EVT_UPDATE_WEBVIEW = NewEvent()
 
 
 class ShadowPanel(wx.Panel):
@@ -26,7 +29,12 @@ class ShadowPanel(wx.Panel):
 
 class SocialNetworkApp(wx.Frame):
     def __init__(self, parent, title):
-        super(SocialNetworkApp, self).__init__(parent, title=title, size=(800, 600))
+        super(SocialNetworkApp, self).__init__(
+            parent,
+            title=title,
+            size=(800, 600),
+            style=wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER,
+        )
         self.save_folder = "Savedata"
         if not os.path.exists(self.save_folder):
             os.mkdir(self.save_folder)
@@ -42,6 +50,7 @@ class SocialNetworkApp(wx.Frame):
         self.panel_with_content.SetBackgroundColour(wx.Colour(75, 0, 130))
         self.main_sizer.Add(self.panel_with_content, 1, wx.EXPAND | wx.ALL, 10)
         self.panel_with_content.Bind(wx.EVT_PAINT, self.web_paint)
+
         self.panel_with_content_sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel_with_content.SetSizer(self.panel_with_content_sizer)
 
@@ -65,6 +74,7 @@ class SocialNetworkApp(wx.Frame):
             self.panel_with_content, pos=(450, 290), size=(300, 240)
         )
         self.main_panel.SetSizer(self.main_sizer)
+        self.Bind(EVT_UPDATE_WEBVIEW, self.on_update_webview)
         self.create_widgets()
         self.update_visualization()
         self.Show()
@@ -398,22 +408,30 @@ class SocialNetworkApp(wx.Frame):
 
         generate_label = wx.StaticText(window, label="Choose network size generation:")
         sizer.Add(generate_label, 0, wx.ALL, 5)
-        numbers_list = wx.ListBox(
-            window, choices=["50", "100", "1000"], name=wx.ListBoxNameStr
+
+        self.get_size = wx.Slider(
+            window, value=1, minValue=1, maxValue=1000, name=wx.SliderNameStr
         )
-        sizer.Add(numbers_list, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self.get_size, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.value_label = wx.StaticText(window, label="Current size: 1")
+        sizer.Add(self.value_label, 0, wx.ALIGN_CENTER | wx.ALL, 5)
+
+        self.get_size.Bind(wx.EVT_SLIDER, self.on_slider_change)
 
         generate_btn = wx.Button(window, label="Generate Network")
         generate_btn.Bind(
             wx.EVT_BUTTON,
-            lambda evt: self.generate_random_network(
-                numbers_list.GetStringSelection(), window
-            ),
+            lambda evt: self.generate_random_network(self.get_size.GetValue(), window),
         )
 
         sizer.Add(generate_btn, 0, wx.ALIGN_CENTER | wx.ALL, 10)
         window.SetSizer(sizer)
         window.ShowModal()
+
+    def on_slider_change(self, event):
+        value = self.get_size.GetValue()
+        self.value_label.SetLabel(f"Current size: {value}")
 
     def generate_random_network(self, size, window):
         self.users = {}
@@ -607,34 +625,41 @@ class SocialNetworkApp(wx.Frame):
         window.ShowModal()
 
     def update_visualization(self, shortestpath=False):
-        net = Network(notebook=True, cdn_resources="in_line")
-        net.nodes = []
-        net.edges = []
+        def worker_thread():
+            net = Network(notebook=True, cdn_resources="in_line")
+            net.nodes = []
+            net.edges = []
 
-        for user_id in self.users:
-            user_data = self.users[user_id]
-            net.add_node(user_id, label=user_data["name"] + f" ({user_id})")
+            for user_id in self.users:
+                user_data = self.users[user_id]
+                net.add_node(user_id, label=user_data["name"] + f" ({user_id})")
 
-        for (user1, user2), weight in self.connections.items():
-            net.add_edge(user1, user2, value=weight)
-        if shortestpath:
-            for i in range(len(shortestpath) - 1):
-                start_node = shortestpath[i]
-                end_node = shortestpath[i + 1]
-                for edge in net.get_edges():
-                    if (edge["from"] == start_node and edge["to"] == end_node) or (
-                        edge["from"] == end_node and edge["to"] == start_node
-                    ):
-                        edge["color"] = "red"
-                        edge["width"] = 2
+            for (user1, user2), weight in self.connections.items():
+                net.add_edge(user1, user2, value=weight)
+            if shortestpath:
+                for i in range(len(shortestpath) - 1):
+                    start_node = shortestpath[i]
+                    end_node = shortestpath[i + 1]
+                    for edge in net.get_edges():
+                        if (edge["from"] == start_node and edge["to"] == end_node) or (
+                            edge["from"] == end_node and edge["to"] == start_node
+                        ):
+                            edge["color"] = "red"
+                            edge["width"] = 2
 
-        temp_file_path = os.path.join(os.getcwd(), "temp_network.html")
-        net.show(temp_file_path)
+            temp_file_path = os.path.join(os.getcwd(), "temp_network.html")
+            net.show(temp_file_path)
 
-        while not os.path.exists(temp_file_path):
-            time.sleep(0.1)
+            while not os.path.exists(temp_file_path):
+                time.sleep(0.1)
 
-        self.webview.LoadURL(f"file://{temp_file_path}")
+            wx.PostEvent(self, UpdateWebViewEvent(filepath=temp_file_path))
+
+        threading.Thread(target=worker_thread, daemon=True).start()
+
+    def on_update_webview(self, event):
+        self.webview.SetZoomType(wx.html2.WEBVIEW_ZOOM_TYPE_TEXT)
+        self.webview.LoadURL(f"file://{event.filepath}")
 
     def add_overlay_info(self, html_file):
         total_nodes = len(self.users)
