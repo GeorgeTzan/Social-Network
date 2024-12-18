@@ -1,9 +1,11 @@
 # Social-Network
-Social Network Application. A Python based Social Network app using a graphical user interface (GUI) built with tkinter. The Application supports essential functionalities, such as user managment, connection creation and network analysis based in C++. 
+Social Network Application. A Python based Social Network app using a graphical user interface (GUI) built with tkinter & wxPython versions. The Application supports essential functionalities, such as user managment, connection creation and network analysis based in C++.
 
 ### Table of Contents
 
 - [Installation](#installation)
+    - [Windows](#Windows)
+    - [Linux](#Linux)
 - [Usage](#usage)
 - [How to Use](#how-to-use)
 - [Features](#features)
@@ -42,6 +44,24 @@ Getting the Social Network up and running, follow these steps:
     ```bash
     python3 Social\ Network.py 
     ```
+
+## Windows
+
+* **Warning:** 
+This was built in a Linux enviroment. Behaviour in Windows OS is unknown.
+
+Have Visual C++ Build Tools installed & wxPython 
+```bash
+pip install -r requirements_wx.txt 
+pip install -r requirements_tkinter.txt
+```
+## Linux
+```bash
+sudo apt update
+sudo apt install -y libgtk-3-dev libjpeg-dev libpng-dev libfreetype6-dev
+pip install -r requirements_wx.txt 
+pip install -r requirements_tkinter.txt
+```
 
 ## Usage
 
