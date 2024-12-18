@@ -1,30 +1,26 @@
 import wx
-import tkinter as tk
-from tkinter import messagebox
 from pyvis.network import Network
 import wx.html2
-import wx.html  
-import wx.lib.agw.shapedbutton as SB
 import os
 import social_network
 import datetime
 from faker import Faker
+import time
 import random
 
 
-os.environ["PYWEBVIEW_GUI"] = "qt"
 network_cpp = social_network.SocialNetwork()
 
 
 class ShadowPanel(wx.Panel):
     def __init__(self, parent, pos, size, color=(0, 0, 0, 128)):
         super().__init__(parent, pos=pos, size=size, style=wx.BORDER_SIMPLE)
-        self.SetBackgroundColour(wx.Colour(*color))  # Semi-transparent color
+        self.SetBackgroundColour(wx.Colour(*color))
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
     def on_paint(self, event):
         dc = wx.PaintDC(self)
-        dc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 50)))  # Shadow-like transparent brush
+        dc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 50)))
         dc.DrawRectangle(0, 0, self.GetSize().x, self.GetSize().y)
 
 
@@ -41,15 +37,14 @@ class SocialNetworkApp(wx.Frame):
         self.main_panel = wx.Panel(self)
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        self.main_panel.SetBackgroundColour(wx.Colour(75, 0, 130))
         self.panel_with_content = wx.Panel(self.main_panel)
         self.panel_with_content.SetBackgroundColour(wx.Colour(75, 0, 130))
         self.main_sizer.Add(self.panel_with_content, 1, wx.EXPAND | wx.ALL, 10)
-
-        # Creating sizer for panel_with_content
+        self.panel_with_content.Bind(wx.EVT_PAINT, self.web_paint)
         self.panel_with_content_sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel_with_content.SetSizer(self.panel_with_content_sizer)
 
-        # Adding ShadowPanels inside panel_with_content
         ShadowPanel(
             self.panel_with_content, pos=(50, 50), size=(300, 220), color=(0, 0, 0, 100)
         )
@@ -66,7 +61,6 @@ class SocialNetworkApp(wx.Frame):
             color=(0, 0, 0, 100),
         )
 
-        
         self.webview = wx.html2.WebView.New(
             self.panel_with_content, pos=(450, 290), size=(300, 240)
         )
@@ -77,7 +71,6 @@ class SocialNetworkApp(wx.Frame):
 
     def create_widgets(self):
         panel = self.main_panel
-        panel.SetBackgroundColour(wx.Colour(75, 0, 130))
 
         add_user_btn = wx.Button(panel, label="Add User", pos=(80, 100))
         add_user_btn.Bind(wx.EVT_BUTTON, self.add_user_window)
@@ -93,22 +86,27 @@ class SocialNetworkApp(wx.Frame):
         user_managment_label = wx.StaticText(
             panel, label="User Managment", pos=(130, 30)
         )
+
         user_managment_label.SetForegroundColour("white")
+        user_managment_label.SetBackgroundColour(wx.Colour(0, 0, 0, 150))
 
         connection_managment_label = wx.StaticText(
             panel, label="Connection Managment", pos=(520, 30)
         )
         connection_managment_label.SetForegroundColour("white")
+        connection_managment_label.SetBackgroundColour(wx.Colour(0, 0, 0, 150))
 
         network_managment_label = wx.StaticText(
             panel, label="Network Managment", pos=(128, 280)
         )
         network_managment_label.SetForegroundColour("white")
+        network_managment_label.SetBackgroundColour(wx.Colour(0, 0, 0, 150))
 
         network_analysis_label = wx.StaticText(
             panel, label="Network Analysis", pos=(520, 280)
         )
         network_analysis_label.SetForegroundColour("white")
+        network_analysis_label.SetBackgroundColour(wx.Colour(0, 0, 0, 150))
 
         connection_sizer = wx.BoxSizer(wx.HORIZONTAL)
         create_connection_btn = wx.Button(
@@ -116,6 +114,12 @@ class SocialNetworkApp(wx.Frame):
         )
         create_connection_btn.Bind(wx.EVT_BUTTON, self.create_connection_window)
         connection_sizer.Add(create_connection_btn, 0, wx.ALL, 5)
+
+        update_connection_btn = wx.Button(
+            panel, label="Update Connection", pos=(520, 190)
+        )
+        update_connection_btn.Bind(wx.EVT_BUTTON, self.update_connection_weight_window)
+        connection_sizer.Add(update_connection_btn, 0, wx.ALL, 5)
 
         save_network_btn = wx.Button(panel, label="Save", pos=(500, 100))
         save_network_btn.Bind(wx.EVT_BUTTON, self.save_network)
@@ -126,21 +130,35 @@ class SocialNetworkApp(wx.Frame):
         connection_sizer.Add(load_network_btn, 0, wx.ALL, 5)
 
         random_network_btn = wx.Button(
-            panel, label="Generate Random Network", pos=(90, 310)
+            panel, label="Generate Random Network", pos=(90, 320)
         )
         random_network_btn.Bind(wx.EVT_BUTTON, self.generate_random_network_window)
 
-        visualize_btn = wx.Button(panel, label="Visualize Network", pos=(90, 350))
-        visualize_btn.Bind(wx.EVT_BUTTON, self.update_visualization)
+        visualize_btn = wx.Button(panel, label="Visualize Network", pos=(90, 360))
+        visualize_btn.Bind(wx.EVT_BUTTON, lambda evt: self.update_visualization())
 
-        friend_req_btn = wx.Button(panel, label="Friends Recommendation", pos=(90, 390))
+        friend_req_btn = wx.Button(panel, label="Friends Recommendation", pos=(90, 400))
         friend_req_btn.Bind(wx.EVT_BUTTON, self.recommend_friends_window)
 
-        detect_comm_btn = wx.Button(panel, label="Detect Communities", pos=(90, 430))
+        detect_comm_btn = wx.Button(panel, label="Detect Communities", pos=(90, 440))
         detect_comm_btn.Bind(wx.EVT_BUTTON, self.detect_communities_window)
 
-        short_path_btn = wx.Button(panel, label="Find shortest Path", pos=(90, 470))
+        short_path_btn = wx.Button(panel, label="Find shortest Path", pos=(90, 480))
         short_path_btn.Bind(wx.EVT_BUTTON, self.shortest_path_window)
+
+    def web_paint(self, event):
+        dc = wx.PaintDC(self.panel_with_content)
+        gc = wx.GraphicsContext.Create(dc)
+
+        gc.SetPen(wx.Pen(wx.Colour(230, 230, 250), width=1))
+
+        width, height = self.panel_with_content.GetSize()
+        num_lines = 500
+
+        for _ in range(num_lines):
+            x1, y1 = random.randint(0, width), random.randint(0, height)
+            x2, y2 = random.randint(0, width), random.randint(0, height)
+            gc.StrokeLine(x1, y1, x2, y2)
 
     def add_user_window(self, event):
         window = wx.Dialog(self, title="Add User", size=(400, 300))
@@ -324,7 +342,7 @@ class SocialNetworkApp(wx.Frame):
                 raise ValueError
         except ValueError:
             if window != None:
-                wx.MessageBox("Error", "Weight must be in between 0.01 and 1!")
+                wx.MessageBox("Weight must be in between 0.01 and 1!", "Error")
             return
 
         self.connections[(user1, user2)] = weight
@@ -335,10 +353,10 @@ class SocialNetworkApp(wx.Frame):
         network_cpp.add_connection(user1, user2, weight)
         if window != None:
             wx.MessageBox(
-                "Success!", f"Connection between {user1} and {user2} has been made!"
+                f"Connection between {user1} and {user2} has been made!", "Success!"
             )
             window.Destroy()
-        self.update_visualization(run_window=False)
+        self.update_visualization()
 
     def save_network(self, event):
         files = [f for f in os.listdir(self.save_folder) if f.endswith(".xyz")]
@@ -375,28 +393,32 @@ class SocialNetworkApp(wx.Frame):
         wx.MessageBox(f"Network loaded from {load_path}.", "Load Network")
 
     def generate_random_network_window(self, event):
-        window = tk.Toplevel(self.root)
-        window.title("Generate a random network")
+        window = wx.Dialog(self, title="Create a random network", size=(400, 300))
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        generate_label = tk.Label(window, text="Choose network size generation:")()
-        numbers_list = tk.Listbox(window, selectmode="single")
+        generate_label = wx.StaticText(window, label="Choose network size generation:")
+        sizer.Add(generate_label, 0, wx.ALL, 5)
+        numbers_list = wx.ListBox(
+            window, choices=["50", "100", "1000"], name=wx.ListBoxNameStr
+        )
+        sizer.Add(numbers_list, 0, wx.EXPAND | wx.ALL, 5)
 
-        for size in [50, 100, 1000]:
-            numbers_list.insert(tk.END, size)
-
-        numbers_list()
-
-        tk.Button(
-            window,
-            text="Generate Network",
-            command=lambda: self.generate_random_network(
-                numbers_list.get(numbers_list.curselection()), window
+        generate_btn = wx.Button(window, label="Generate Network")
+        generate_btn.Bind(
+            wx.EVT_BUTTON,
+            lambda evt: self.generate_random_network(
+                numbers_list.GetStringSelection(), window
             ),
-        )()
+        )
+
+        sizer.Add(generate_btn, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+        window.SetSizer(sizer)
+        window.ShowModal()
 
     def generate_random_network(self, size, window):
         self.users = {}
         self.connections = {}
+        size = int(size)
         fake = Faker()
         for i in range(size):
             user_id = str(i)
@@ -441,71 +463,88 @@ class SocialNetworkApp(wx.Frame):
             return
         self.connections[(user1, user2)] = new_weight
         wx.MessageBox(
-            "Success!", f"Connection between {user1} and {user2} has been updated!"
+            f"Connection between {user1} and {user2} has been updated!", "Success!"
         )
         self.update_visualization(run_window=False)
         window.Destroy()
 
     def update_connection_weight_window(self, event):
-        window = tk.Toplevel(self.root)
-        window.title("Update Connection Weight")
+        window = wx.Dialog(self, title="Update Connection Weight", size=(400, 300))
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        tk.Label(window, text="User 1 ID:")()
-        user1_entry = tk.Entry(window)
-        user1_entry()
+        user1_label = wx.StaticText(window, label="User 1 ID:")()
+        sizer.Add(user1_label, 0, wx.ALL, 5)
+        user1_entry = wx.TextCtrl(window)
+        sizer.Add(user1_entry, 0, wx.EXPAND | wx.ALL, 5)
 
-        tk.Label(window, text="User 2 ID:")()
-        user2_entry = tk.Entry(window)
-        user2_entry()
+        user2_label = wx.StaticText(window, label="User 2 ID:")()
+        sizer.Add(user2_label, 0, wx.ALL, 5)
+        user2_entry = wx.TextCtrl(window)
+        sizer.Add(user2_entry, 0, wx.EXPAND | wx.ALL, 5)
 
-        tk.Label(window, text="Connection Weight (0.01 - 1):")()
-        new_weight_entry = tk.Entry(window)
-        new_weight_entry()
+        connection_label = wx.StaticText(
+            window, label="Connection Weight (0.01 - 1):"
+        )()
+        sizer.Add(connection_label, 0, wx.ALL, 5)
+        new_weight_entry = wx.TextCtrl(window)
+        sizer.Add(new_weight_entry, 0, wx.ALL, 5)
 
-        tk.Button(
-            window,
-            text="Update weight",
-            command=lambda: self.update_connection_weight(
+        update_weight_btn = wx.BUTTON(window, label="Update Weight")
+        update_weight_btn.Bind(
+            wx.EVT_BUTTON,
+            lambda evt: self.update_connection_weight(
                 user1_entry.GetValue().strip(),
                 user2_entry.GetValue().strip(),
                 new_weight_entry,
                 window,
             ),
-        )()
+        )
+
+        sizer.Add(update_weight_btn, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+        window.SetSizer(sizer)
+        window.ShowModal()
 
     def recommend_friends_window(self, event):
-        window = tk.Toplevel(self.root)
-        window.title("Friend recommendations")
+        window = wx.Dialog(self, title="Friend Recommendation", size=(220, 150))
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        tk.Label(window, text="User ID:")()
-        user_entry = tk.Entry(window)
-        user_entry()
+        user_label = wx.StaticText(window, label="User ID:")
+        sizer.Add(user_label, 0, wx.ALL, 5)
+        user_entry = wx.TextCtrl(window)
+        sizer.Add(user_entry, 0, wx.EXPAND | wx.ALL, 5)
 
         def recommend_friends():
             user_id = user_entry.GetValue().strip()
             if user_id not in self.users:
-                wx.MessageBox("Error", "User ID does not exist!")
+                wx.MessageBox("User ID does not exist!", "Error")
                 window.Destroy()
                 return
 
             recommendations = network_cpp.recommend_friends(user_id)
             if not recommendations:
-                wx.MessageBox("Recommendations", "No friends found!")
+                wx.MessageBox("No friends found!", "Recommendations")
                 window.Destroy()
                 return
             else:
                 message = "\n".join(recommendations)
-                wx.MessageBox("Recommendations", message)
+                wx.MessageBox(message, "Recommendations")
 
-        tk.Button(window, text="Get Recommendations", command=recommend_friends)()
+        get_recommendation_btn = wx.Button(window, label="Get Recommendations")
+        get_recommendation_btn.Bind(wx.EVT_BUTTON, lambda evt: recommend_friends())
+
+        sizer.Add(get_recommendation_btn, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+        window.SetSizer(sizer)
+        window.ShowModal()
 
     def detect_communities_window(self, event):
-        window = tk.Toplevel(self.root)
-        window.title("Detect Communities")
+        window = wx.Dialog(self, title="Detect Communities", size=(220, 150))
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        tk.Label(window, text="Threshold: 0.01 - 1:")()
-        threshold_entry = tk.Entry(window)
-        threshold_entry()
+        threshold_label = wx.StaticText(window, label="Threshold: 0.01 - 1:")
+        sizer.Add(threshold_label, 0, wx.ALL, 5)
+
+        threshold_entry = wx.TextCtrl(window)
+        sizer.Add(threshold_entry, 0, wx.EXPAND | wx.ALL, 5)
 
         def community_detection():
             try:
@@ -514,7 +553,7 @@ class SocialNetworkApp(wx.Frame):
                     raise ValueError
                 communities = network_cpp.detect_communities(threshold)
                 if not communities:
-                    wx.MessageBox("Communities", "No communities found!")
+                    wx.MessageBox("No communities found!", "Communities")
                 else:
                     communities_message = "\n\n".join(
                         [
@@ -522,29 +561,34 @@ class SocialNetworkApp(wx.Frame):
                             for i, community in enumerate(communities)
                         ]
                     )
-                    wx.MessageBox("Communities", communities_message)
+                    wx.MessageBox(communities_message, "Communities")
             except ValueError:
-                wx.MessageBox("Error", "Threshold must be between 0.01 and 1.")
+                wx.MessageBox("Threshold must be between 0.01 and 1.", "Error")
                 window.Destroy()
 
-        tk.Button(window, text="Detect Communities", command=community_detection)()
+        detect_communities_btn = wx.Button(window, label="Detect Communities")
+        detect_communities_btn.Bind(wx.EVT_BUTTON, lambda evt: community_detection())
+        sizer.Add(detect_communities_btn, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+        window.SetSizer(sizer)
+        window.ShowModal()
 
     def shortest_path_window(self, event):
-        window = tk.Toplevel(self.root)
-        window.title("Shortest Path")
+        window = wx.Dialog(self, title="Shortest Path", size=(400, 300))
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        tk.Label(window, text="Start User ID:")()
-        start_entry = tk.Entry(window)
-        start_entry()
+        user_start = wx.StaticText(window, label="Start User ID:")
+        sizer.Add(user_start, 0, wx.ALL, 5)
+        start_entry = wx.TextCtrl(window)
+        sizer.Add(start_entry, 0, wx.EXPAND | wx.ALL, 5)
 
-        tk.Label(window, text="End User ID:")()
-        end_entry = tk.Entry(window)
-        end_entry()
+        user_end = wx.StaticText(window, label="End User ID:")
+        sizer.Add(user_end, 0, wx.ALL, 5)
+        end_entry = wx.TextCtrl(window)
+        sizer.Add(end_entry, 0, wx.EXPAND | wx.ALL, 5)
 
         def shortest_path():
             start = start_entry.GetValue().strip()
             end = end_entry.GetValue().strip()
-
             if start not in self.users or end not in self.users:
                 wx.MessageBox("Both Users must exist!", "Error")
                 return
@@ -553,12 +597,16 @@ class SocialNetworkApp(wx.Frame):
                 wx.MessageBox("No path found!", "Error")
             else:
                 path_message = " ->".join(path)
-                wx.MessageBox("Shortest Path", f"Shortest path: {path_message}")
+                wx.MessageBox(f"Shortest path: {path_message}", "Shortest Path")
                 self.update_visualization(shortestpath=path)
 
-        tk.Button(window, text="Find shortest path", command=shortest_path)()
+        shortest_path_btn = wx.Button(window, label="Find Shortest Path")
+        shortest_path_btn.Bind(wx.EVT_BUTTON, lambda evt: shortest_path())
+        sizer.Add(shortest_path_btn, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+        window.SetSizer(sizer)
+        window.ShowModal()
 
-    def update_visualization(self, shortestpath=None):
+    def update_visualization(self, shortestpath=False):
         net = Network(notebook=True, cdn_resources="in_line")
         net.nodes = []
         net.edges = []
@@ -569,7 +617,6 @@ class SocialNetworkApp(wx.Frame):
 
         for (user1, user2), weight in self.connections.items():
             net.add_edge(user1, user2, value=weight)
-
         if shortestpath:
             for i in range(len(shortestpath) - 1):
                 start_node = shortestpath[i]
@@ -584,21 +631,17 @@ class SocialNetworkApp(wx.Frame):
         temp_file_path = os.path.join(os.getcwd(), "temp_network.html")
         net.show(temp_file_path)
 
-        with open(temp_file_path, "r") as file:
-            content = file.read()
-            if not content.strip():
-                print("Error: The HTML file is empty or was not created correctly.")
-            else:
-                print("HTML file created successfully.")
+        while not os.path.exists(temp_file_path):
+            time.sleep(0.1)
 
-        self.webview.LoadURL("file://" + temp_file_path)
+        self.webview.LoadURL(f"file://{temp_file_path}")
 
     def add_overlay_info(self, html_file):
         total_nodes = len(self.users)
         total_edges = len(self.connections)
 
         overlay_html = f"""
-        <div style="position: absolute; top: 10px; left: 10px; background-color: rgba(255, 255, 255, 0.8); padding: 10px; border: 1px solid black; z-index: 1000;">
+        <div style="position: absolute; top: 10px; left: 10px; background-color: rgba(255, 255, 255, 0.8); padding: 10px; border: 1px solid white; z-index: 1000;">
             <p>Total Nodes: {total_nodes}</p>
             <p>Total Edges: {total_edges}</p>
         </div>
