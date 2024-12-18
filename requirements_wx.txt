@@ -1,0 +1,5 @@
+wxPython==4.2.2
+pyvis==0.3.2
+Faker==33.1.0
+networkx==3.4.2
+
