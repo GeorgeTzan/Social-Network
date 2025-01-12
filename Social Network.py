@@ -304,19 +304,14 @@ class SocialNetworkApp:
         window.title("Generate a random network")
 
         generate_label = tk.Label(window, text="Choose network size generation:").pack()
-        numbers_list = tk.Listbox(window, selectmode="single")
+        numbers_scale = tk.Scale(window, from_=1, to=1000, orient=tk.HORIZONTAL)
 
-        for size in [50, 100, 1000]:
-            numbers_list.insert(tk.END, size)
-
-        numbers_list.pack()
+        numbers_scale.pack()
 
         tk.Button(
             window,
             text="Generate Network",
-            command=lambda: self.generate_random_network(
-                numbers_list.get(numbers_list.curselection()), window
-            ),
+            command=lambda: self.generate_random_network(numbers_scale.get(), window),
         ).pack()
 
     def generate_random_network(self, size, window):
@@ -484,7 +479,6 @@ class SocialNetworkApp:
         net = Network(notebook=True, cdn_resources="in_line")
         net.nodes = []
         net.edges = []
-        
 
         for user_id in self.users:
             user_data = self.users[user_id]
