@@ -490,24 +490,22 @@ class SocialNetworkApp(wx.Frame):
         window = wx.Dialog(self, title="Update Connection Weight", size=(400, 300))
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        user1_label = wx.StaticText(window, label="User 1 ID:")()
+        user1_label = wx.StaticText(window, label="User 1 ID:")
         sizer.Add(user1_label, 0, wx.ALL, 5)
         user1_entry = wx.TextCtrl(window)
         sizer.Add(user1_entry, 0, wx.EXPAND | wx.ALL, 5)
 
-        user2_label = wx.StaticText(window, label="User 2 ID:")()
+        user2_label = wx.StaticText(window, label="User 2 ID:")
         sizer.Add(user2_label, 0, wx.ALL, 5)
         user2_entry = wx.TextCtrl(window)
         sizer.Add(user2_entry, 0, wx.EXPAND | wx.ALL, 5)
 
-        connection_label = wx.StaticText(
-            window, label="Connection Weight (0.01 - 1):"
-        )()
+        connection_label = wx.StaticText(window, label="Connection Weight (0.01 - 1):")
         sizer.Add(connection_label, 0, wx.ALL, 5)
         new_weight_entry = wx.TextCtrl(window)
-        sizer.Add(new_weight_entry, 0, wx.ALL, 5)
+        sizer.Add(new_weight_entry, 0, wx.EXPAND | wx.ALL, 5)
 
-        update_weight_btn = wx.BUTTON(window, label="Update Weight")
+        update_weight_btn = wx.Button(window, label="Update Weight")
         update_weight_btn.Bind(
             wx.EVT_BUTTON,
             lambda evt: self.update_connection_weight(
