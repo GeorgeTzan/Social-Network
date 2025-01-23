@@ -96,6 +96,9 @@ public:
         return path;
     }
 
+
+
+    
     vector<unordered_set<string>> detect_communities(double threshold = 0.01) {
         unordered_set<string> visited;
         vector<unordered_set<string>> communities;

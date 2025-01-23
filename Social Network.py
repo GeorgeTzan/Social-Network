@@ -317,6 +317,7 @@ class SocialNetworkApp:
     def generate_random_network(self, size, window):
         self.users = {}
         self.connections = {}
+        network_cpp.clear_network()
         fake = Faker()
         for i in range(size):
             user_id = str(i)
@@ -327,6 +328,7 @@ class SocialNetworkApp:
                 name = name.split()[0]
 
             self.add_user(user_id, name, "")
+            network_cpp.add_user(user_id, name, "")
 
         existing_connections = set()
         for _ in range(int(size)):
@@ -340,8 +342,12 @@ class SocialNetworkApp:
                 ):
                     weight = round(random.uniform(0.01, 1.0), 2)
                     self.create_connection(user_id_f, user_id_s, weight, window=None)
+                    network_cpp.add_connection(user_id_f, user_id_s, weight)
                     existing_connections.add((user_id_f, user_id_s))
                     break
+            messagebox.showinfo("Completed", "Random network generated")
+            window.destroy()
+            return
 
     def update_connection_weight(self, user1, user2, new_weight, window):
         if user1 not in self.users or user2 not in self.users:
