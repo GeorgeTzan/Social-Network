@@ -436,6 +436,7 @@ class SocialNetworkApp(wx.Frame):
     def generate_random_network(self, size, window):
         self.users = {}
         self.connections = {}
+        network_cpp.clear_network()
         size = int(size)
         fake = Faker()
         for i in range(size):
@@ -460,6 +461,7 @@ class SocialNetworkApp(wx.Frame):
                 ):
                     weight = round(random.uniform(0.01, 1.0), 2)
                     self.create_connection(user_id_f, user_id_s, weight, window=None)
+                    network_cpp.add_connection(user_id_f, user_id_s, weight)
                     existing_connections.add((user_id_f, user_id_s))
                     break
 
